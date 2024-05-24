@@ -15,7 +15,7 @@ We also provide simulation of synchronous federated learning like FedAvg.
 
 + Download this project 
 ```
-git clone https://github.com/boyi-liu/FedSim.git
+git clone https://github.com/boyi-liu/Asynchronous-Federated-Learning-Simulation.git
 ```
 + Install required packages
 + Partition datasets
@@ -77,5 +77,4 @@ You can overwrite or add any function as you want then.
 
 ## Acknowledgements
 The data partitioning module is adopted from [PFLlib](https://github.com/TsingZ0/PFLlib).
-
 
