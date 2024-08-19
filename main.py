@@ -24,12 +24,7 @@ class FedSim:
         if not os.path.exists(f'./{args.suffix}'):
             os.makedirs(f'./{args.suffix}')
 
-        output_path = f'./{args.suffix}/{args.alg}_{args.dataset}_{args.model}_' \
-                      f'{args.total_num}c_{args.epoch}E_lr{args.lr}.txt'
-        self.output = open(output_path, 'a')
-        result_path = f'./{args.suffix}/result_{args.dataset}_{args.model}_' \
-                      f'{args.total_num}c_{args.epoch}E_lr{args.lr}.txt'
-        self.res_output = open(result_path, 'a')
+        self.config_output()
         args.output = self.output
 
         # === init clients & server ===
@@ -39,15 +34,12 @@ class FedSim:
     def simulate(self):
         TEST_GAP = self.args.test_gap
         try:
-            for rnd in tqdm(range(self.server.total_round), desc='Communication Round', leave=False):
+            for rnd in tqdm(range(0, self.server.total_round, TEST_GAP), desc='Communication Round', leave=False):
                 # ===================== train =====================
                 self.server.round = rnd
                 self.server.run()
 
                 # ===================== test =====================
-                if rnd % TEST_GAP:
-                    continue
-
                 ret_dict = self.server.test_all()
                 self.acc_processor.append(ret_dict['acc'])
 
@@ -60,9 +52,9 @@ class FedSim:
             ...
         finally:
             acc_list = self.acc_processor.data
-            np.save(f'./{self.args.suffix}/{self.args.alg}_{self.args.dataset}'
-                    f'_{self.args.model}_{self.args.total_num}c_{self.args.epoch}E_lr{args.lr}.npy',
-                    np.array(acc_list))
+            # np.save(f'./{self.args.suffix}/{self.args.alg}_{self.args.dataset}'
+            #         f'_{self.args.model}_{self.args.total_num}c_{self.args.epoch}E_lr{args.lr}.npy',
+            #         np.array(acc_list))
             avg_count = 2
             acc_avg = np.mean(acc_list[-avg_count:]).item()
             acc_std = ret_dict['std']
@@ -72,8 +64,15 @@ class FedSim:
 
             self.output.write('server, max accuracy: %.2f\n' % acc_max)
             self.output.write('server, final accuracy: %.2f +- %.2f\n' % (acc_avg, acc_std))
-
             self.res_output.write(f'{self.args.alg}, acc: {acc_avg:.2f}+-{acc_std:.2f}\n')
+
+    def config_output(self):
+        output_path = f'./{args.suffix}/{args.alg}_{args.dataset}_{args.model}_' \
+                      f'{args.total_num}c_{args.epoch}E_lr{args.lr}.txt'
+        self.output = open(output_path, 'a')
+        result_path = f'./{args.suffix}/result_{args.dataset}_{args.model}_' \
+                      f'{args.total_num}c_{args.epoch}E_lr{args.lr}.txt'
+        self.res_output = open(result_path, 'a')
 
 
 if __name__ == '__main__':
