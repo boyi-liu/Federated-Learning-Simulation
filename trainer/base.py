@@ -4,13 +4,13 @@ import time
 import random
 
 from utils.data_utils import read_client_data
-from utils.modelload.modelloader import load_model
+from models.config import load_model
 from utils.dataprocess import DataProcessor
 from torch.utils.data import DataLoader
 
 
 class BaseClient:
-    def __init__(self, id, args, dataset):
+    def __init__(self, id, args):
         self.id = id
         self.args = args
         self.dataset_train = read_client_data(args.dataset, self.id, is_train=True)
@@ -99,8 +99,8 @@ class BaseClient:
 
 
 class BaseServer(BaseClient):
-    def __init__(self, id, args, dataset, clients):
-        super().__init__(id, args, dataset)
+    def __init__(self, id, args, clients):
+        super().__init__(id, args)
         self.client_num = args.total_num
         self.sample_rate = args.sr
         self.clients = clients

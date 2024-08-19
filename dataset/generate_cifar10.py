@@ -27,8 +27,6 @@ from utils.dataset_utils import check, separate_data, split_data, save_file
 
 random.seed(1)
 np.random.seed(1)
-# num_clients = 50
-# dir_path = "cifar10-224-d03/"
 
 num_clients = 100
 dir_path  = "cifar10/"
@@ -47,9 +45,7 @@ def generate_cifar10(dir_path, num_clients, niid, balance, partition):
         return
         
     # Get Cifar10 data
-    transform = transforms.Compose([transforms.Resize(224),
-    # transform = transforms.Compose([
-                                    transforms.ToTensor(),
+    transform = transforms.Compose([transforms.ToTensor(),
                                     transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
                                     ])
 

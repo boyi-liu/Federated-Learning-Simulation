@@ -1,13 +1,12 @@
 import argparse
 import importlib
-import sys
 
 
 def args_parser():
     parser = argparse.ArgumentParser()
 
     # ===== Method Setting ======
-    parser.add_argument('alg', type=str, default='fedavg')
+    parser.add_argument('--alg', type=str, default='fedavg')
     parser.add_argument('--dataset', type=str, default='mnist')
     parser.add_argument('--model', type=str, default='mlp')
 
@@ -33,7 +32,8 @@ def args_parser():
     # Asynchronous aggregation
     parser.add_argument('--alpha', type=float, default=0.3, help='Weight decay')
 
-    # ===== Method Specific Setting =====
-    spec_alg = sys.argv[1]
+    global_args = parser.parse_args()
+    spec_alg = global_args.alg
     trainer_module = importlib.import_module(f'trainer.alg.{spec_alg}')
-    return trainer_module.add_args(parser)
+
+    return trainer_module.add_args(parser) if hasattr(trainer_module, 'add_args') else global_args

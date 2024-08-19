@@ -33,8 +33,8 @@ class FedSim:
         args.output = self.output
 
         # === init clients & server ===
-        self.clients = [trainer_module.Client(idx, args, None) for idx in range(args.total_num)]
-        self.server = trainer_module.Server(0, args, None, self.clients)
+        self.clients = [trainer_module.Client(idx, args) for idx in range(args.total_num)]
+        self.server = trainer_module.Server(0, args, self.clients)
 
     def simulate(self):
         TEST_GAP = self.args.test_gap
