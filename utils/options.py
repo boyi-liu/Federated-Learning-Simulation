@@ -34,16 +34,17 @@ def args_parser():
     # Asynchronous aggregation
     parser.add_argument('--alpha', type=float, default=0.3, help='Weight decay')
 
-    # === read params from yaml ===
-    # NOTE: Only overwrite when the value is None
-    global_args = parser.parse_args()
-    with open('config.yaml', 'r') as f:
-        yaml_config = yaml.load(f.read(), Loader=yaml.Loader)
-    for k, v in vars(global_args).items():
-        if v is None:
-            setattr(global_args, k, yaml_config[k])
-
     # === read specific parameters from each method
+    global_args = parser.parse_args()
     spec_alg = global_args.alg
     trainer_module = importlib.import_module(f'trainer.alg.{spec_alg}')
-    return trainer_module.add_args(parser) if hasattr(trainer_module, 'add_args') else global_args
+    spec_args = trainer_module.add_args(parser) if hasattr(trainer_module, 'add_args') else global_args
+
+    # === read params from yaml ===
+    # NOTE: Only overwrite when the value is None
+    with open('config.yaml', 'r') as f:
+        yaml_config = yaml.load(f.read(), Loader=yaml.Loader)
+    for k, v in vars(spec_args).items():
+        if v is None:
+            setattr(spec_args, k, yaml_config[k])
+    return spec_args
