@@ -45,7 +45,7 @@ class BaseClient:
                 collate_fn=None
             )
 
-        self.local_params = None
+        self.p_params = [False for _ in self.model.parameters()] # default: all global, no personalized
         self.training_time = None
         self.lag_level = args.lag_level
         self.weight = 1
@@ -70,8 +70,8 @@ class BaseClient:
         self.metric['loss'].append(sum(batch_loss) / len(batch_loss))
 
     def clone_model(self, target):
-        p_tensor = target.model.parameters_to_tensor(self.local_params)
-        self.model.tensor_to_parameters(p_tensor, self.local_params)
+        p_tensor = target.model2tensor()
+        self.tensor2model(p_tensor)
 
     def local_test(self):
         self.model.eval()
@@ -97,6 +97,26 @@ class BaseClient:
         self.optim = torch.optim.SGD(params=self.model.parameters(),
                                      lr=(self.lr * (self.args.gamma ** self.server.round)))
 
+    def model2tensor(self):
+        return torch.cat([p.data.view(-1) for idx, p in enumerate(self.model.parameters())
+                          if self.p_params[idx] is False], dim=0)
+
+    def tensor2model(self, tensor):
+        param_index = 0
+        for is_p, param in zip(self.p_params, self.model.parameters()):
+            if not is_p:
+                # === get shape & total size ===
+                shape = param.shape
+                param_size = 1
+                for s in shape:
+                    param_size *= s
+
+                # === put value into param ===
+                # .clone() is a deep copy here
+                param.data = tensor[param_index: param_index + param_size].view(shape).detach().clone()
+                param_index += param_size
+
+
 
 class BaseServer(BaseClient):
     def __init__(self, id, args, clients):
@@ -111,7 +131,6 @@ class BaseServer(BaseClient):
         self.wall_clock_time = 0
 
         self.received_params = []
-        self.local_params = self.clients[0].local_params if len(self.clients) > 0 else None
 
         for client in self.clients:
             client.server = self
@@ -146,13 +165,13 @@ class BaseServer(BaseClient):
 
     def uplink(self):
         assert (len(self.sampled_clients) > 0)
-        self.received_params = [client.model.parameters_to_tensor(self.local_params) * client.weight
+        self.received_params = [client.model2tensor() * client.weight
                                 for client in self.sampled_clients]
 
     def aggregate(self):
         assert (len(self.sampled_clients) > 0)
         avg_tensor = sum(self.received_params)
-        self.model.tensor_to_parameters(avg_tensor, self.local_params)
+        self.tensor2model(avg_tensor)
 
     def test_all(self):
         for client in self.clients:
