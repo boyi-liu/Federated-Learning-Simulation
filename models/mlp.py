@@ -1,8 +1,7 @@
-from models.basemodule import BaseModule
 import torch.nn as nn
 import torch.nn.functional as F
 
-class MLP(BaseModule):
+class MLP(nn.Module):
     def __init__(self, args, dim_in, dim_hidden, dim_out):
         super(MLP, self).__init__()
         self.args = args

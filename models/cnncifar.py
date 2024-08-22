@@ -1,9 +1,8 @@
-from models.basemodule import BaseModule
 import torch.nn as nn
 import torch.nn.functional as F
 
 
-class CNNCifar(BaseModule):
+class CNNCifar(nn.Module):
     def __init__(self, args, dim_out):
         super(CNNCifar, self).__init__()
         self.args = args

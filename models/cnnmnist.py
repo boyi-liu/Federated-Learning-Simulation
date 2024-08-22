@@ -1,8 +1,7 @@
-from models.basemodule import BaseModule
 import torch.nn as nn
 import torch.nn.functional as F
 
-class CNNMnist(BaseModule):
+class CNNMnist(nn.Module):
     def __init__(self, args, dim_out):
         super(CNNMnist, self).__init__()
         self.args = args

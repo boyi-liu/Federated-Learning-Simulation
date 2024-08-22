@@ -1,10 +1,12 @@
 from trainer.asyncbase import AsyncBaseClient, AsyncBaseServer
 
+
 def add_args(parser):
     parser.add_argument('--a', type=int, default=1)
     parser.add_argument('--b', type=int, default=4)
     parser.add_argument('--strategy', type=str, default='hinge', help='constant/poly/hinge')
     return parser.parse_args()
+
 
 class Client(AsyncBaseClient):
     def run(self):

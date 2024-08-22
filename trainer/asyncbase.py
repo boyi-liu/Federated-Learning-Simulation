@@ -6,8 +6,8 @@ from trainer.base import BaseClient, BaseServer
 
 
 class AsyncBaseClient(BaseClient):
-    def __init__(self, id, args, dataset):
-        super().__init__(id, args, dataset)
+    def __init__(self, id, args):
+        super().__init__(id, args)
         self.train_state = {}
 
     def run(self):
@@ -21,8 +21,8 @@ class AsyncBaseClient(BaseClient):
 
 
 class AsyncBaseServer(BaseServer):
-    def __init__(self, id, args, dataset, clients):
-        super().__init__(id, args, dataset, clients)
+    def __init__(self, id, args, clients):
+        super().__init__(id, args, clients)
         self.priority_queue = []
         self.alpha = args.alpha
         self.MAX_CONCURRENCY = int(self.client_num * self.sample_rate)
