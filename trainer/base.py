@@ -98,8 +98,8 @@ class BaseClient:
                                      lr=(self.lr * (self.args.gamma ** self.server.round)))
 
     def model2tensor(self):
-        return torch.cat([p.data.view(-1) for idx, p in enumerate(self.model.parameters())
-                          if self.p_params[idx] is False], dim=0)
+        return torch.cat([param.data.view(-1) for is_p, param in zip(self.p_params, self.model.parameters())
+                          if is_p is False], dim=0)
 
     def tensor2model(self, tensor):
         param_index = 0
