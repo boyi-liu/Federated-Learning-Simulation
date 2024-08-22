@@ -23,6 +23,12 @@ git clone https://github.com/boyi-liu/Asynchronous-Federated-Learning-Simulation
 cd dataset
 python generate_cifar10.py noniid balance dir
 ```
++ Config hyperparameters
+
+There are two places to config, one in `/script/config.yaml`, another in `utils/options.py`.
+The priority follows: `args>yaml`.
+If you config hyperparameters in `utils/options.py`, it will overwrite that in `args`.
+
 + Run evaluation
 ```
 cd script
