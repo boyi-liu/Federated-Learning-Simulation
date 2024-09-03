@@ -165,8 +165,14 @@ class BaseServer(BaseClient):
 
     def uplink(self):
         assert (len(self.sampled_clients) > 0)
-        self.received_params = [client.model2tensor() * client.weight
-                                for client in self.sampled_clients]
+        self.received_params = []
+        for client in self.sampled_clients:
+            client_tensor = client.model2tensor()
+            client_tensor = torch.where(torch.isnan(client_tensor),
+                                        torch.zeros_like(client_tensor),
+                                        client_tensor)
+            self.received_params.append(client_tensor * client.weight)
+
 
     def aggregate(self):
         assert (len(self.sampled_clients) > 0)
