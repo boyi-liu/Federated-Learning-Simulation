@@ -59,8 +59,6 @@ class AsyncBaseServer(BaseServer):
             client.run()
             end_time = time.time()
             client.training_time = (end_time - start_time) * client.lag_level
-            print(client.training_time)
-            print(self.wall_clock_time + client.training_time)
             heapq.heappush(self.priority_queue, (self.wall_clock_time + client.training_time, client))
 
     def uplink(self):
@@ -71,10 +69,10 @@ class AsyncBaseServer(BaseServer):
     def aggregate(self):
         client = self.clients[self.aggr_id]
 
-        t_global = self.model.parameters_to_tensor(self.local_params)
-        t_local = client.model.parameters_to_tensor(self.local_params)
+        t_global = self.model2tensor()
+        t_local = client.model2tensor()
         t_aggr = self.weight_decay() * t_local + (1 - self.weight_decay()) * t_global
-        self.model.tensor_to_parameters(t_aggr, self.local_params)
+        self.tensor2model(t_aggr)
 
     def update_staleness(self):
         for c in self.active_clients:
