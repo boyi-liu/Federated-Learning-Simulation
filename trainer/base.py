@@ -181,24 +181,22 @@ class BaseServer(BaseClient):
 
     def test_all(self):
         for client in self.clients:
-            c_metric = client.metric
-            if client in self.sampled_clients:
-                self.metric['loss'].append(c_metric['loss'].last())
-
             client.clone_model(self)
             client.local_test()
 
-            self.metric['acc'].append(c_metric['acc'].last())
+            c_metric = client.metric
+            for m_key, m in self.metric.items():
+                if m_key == 'loss' and client not in self.sampled_clients:
+                    continue
+                m.append(c_metric[m_key].last())
+
         return self.analyse_metric()
 
     def analyse_metric(self):
-        acc = self.metric['acc'].avg()
-        loss = self.metric['loss'].avg()
-        std = self.metric['acc'].std()
+        ret_dict = {}
+        for m_key, m in self.metric.items():
+            ret_dict[m_key] = m.avg()
+            ret_dict[f'{m_key}_std'] = m.std()
+            m.clear()
 
-        self.metric['acc'].clear()
-        self.metric['loss'].clear()
-
-        return {'loss': loss,
-                'acc': acc,
-                'std': std}
+        return ret_dict
