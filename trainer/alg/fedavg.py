@@ -1,10 +1,6 @@
 from trainer.base import BaseServer, BaseClient
 
 
-# def add_args(parser):
-#     return parser.parse_args()
-
-
 class Client(BaseClient):
     def run(self):
         self.train()
