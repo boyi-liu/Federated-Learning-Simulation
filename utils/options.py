@@ -35,7 +35,7 @@ def args_parser():
     parser.add_argument('--alpha', type=float, default=0.3, help='Weight decay')
 
     # === read specific parameters from each method
-    global_args = parser.parse_args()
+    global_args = parser.parse_known_args()
     spec_alg = global_args.alg
     trainer_module = importlib.import_module(f'trainer.alg.{spec_alg}')
     spec_args = trainer_module.add_args(parser) if hasattr(trainer_module, 'add_args') else global_args
