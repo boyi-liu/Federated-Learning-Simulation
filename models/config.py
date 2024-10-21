@@ -23,7 +23,10 @@ def load_model(args):
 
     if dataset_arg not in model_params.keys():
         exit('Dataset params not exist (in config.py)!')
-    if model_arg not in model_params[dataset_arg].keys():
-        exit('Model params not exist (in config.py)!')
+
+    params = None
+    if model_arg in model_params[dataset_arg].keys():
+        params = {**model_params[dataset_arg][model_arg]}
+
     model_module = importlib.import_module(f'models.{model_arg}')
-    return getattr(model_module, model_arg)(args, {**model_params[dataset_arg][model_arg]})
+    return getattr(model_module, model_arg)(args, params)
