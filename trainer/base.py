@@ -35,14 +35,16 @@ class BaseClient:
                 dataset=self.dataset_train,
                 batch_size=self.batch_size,
                 shuffle=True,
-                collate_fn=None
+                collate_fn=None,
+                drop_last=True
             )
         if self.dataset_test is not None:
             self.loader_test = DataLoader(
                 dataset=self.dataset_test,
                 batch_size=self.batch_size,
                 shuffle=True,
-                collate_fn=None
+                collate_fn=None,
+                drop_last=True
             )
 
         self.p_params = [False for _ in self.model.parameters()] # default: all global, no personalized
