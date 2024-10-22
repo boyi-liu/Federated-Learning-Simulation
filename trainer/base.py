@@ -118,6 +118,25 @@ class BaseClient:
                 param.data = tensor[param_index: param_index + param_size].view(shape).detach().clone()
                 param_index += param_size
 
+    def save_model(self, path):
+        # === only save p_params ===
+        save_dict = {}
+        model_dict = self.model.state_dict()
+        for is_p, param_name in zip(self.p_params, model_dict.keys()):
+            if is_p:
+                save_dict[param_name] = self.model.state_dict()[param_name]
+        torch.save(save_dict, path)
+
+    def load_model(self, path):
+        # === load global params in server ===
+        params_dict = self.server.model.state_dict()
+        # === load p_params ===
+        save_dict = torch.load(path, weights_only=True)
+
+        for param_name in save_dict.keys():
+            params_dict[param_name] = save_dict[param_name]
+        self.model.load_state_dict(params_dict)
+
 
 
 class BaseServer(BaseClient):
@@ -202,3 +221,9 @@ class BaseServer(BaseClient):
             m.clear()
 
         return ret_dict
+
+    def save_model(self, path):
+        torch.save(self.model.state_dict(), path)
+
+    def load_model(self, path):
+        self.model.load_state_dict(torch.load(path, weights_only=True))

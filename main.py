@@ -2,6 +2,7 @@ import importlib
 import sys
 import numpy as np
 import os
+import ujson
 
 from utils.options import args_parser
 from utils.dataprocess import DataProcessor
@@ -32,9 +33,9 @@ class FedSim:
         self.server = trainer_module.Server(0, args, self.clients)
 
     def simulate(self):
-        TEST_GAP = self.args.test_gap
+        start_round = self.recover()
         try:
-            for rnd in tqdm(range(0, self.server.total_round, TEST_GAP), desc='Communication Round', leave=False):
+            for rnd in tqdm(range(start_round, self.server.total_round), desc='Communication Round', leave=False):
                 # ===================== train =====================
                 self.server.round = rnd
                 self.server.run()
@@ -42,6 +43,9 @@ class FedSim:
                 # ===================== test =====================
                 ret_dict = self.server.test_all()
                 self.acc_processor.append(ret_dict['acc'])
+
+                if rnd % 5 == 0:
+                    self.save_context()
 
                 self.output.write(f'========== Round {rnd} ==========\n')
 
@@ -81,6 +85,57 @@ class FedSim:
                       f'{args.total_num}c_{args.epoch}E_lr{args.lr}.txt'
         self.res_output = open(result_path, 'a')
 
+    def recover(self):
+        if args.recover == 0:
+            return 0
+        config_path = f'./{args.suffix}/{args.alg}_{args.dataset}_{args.model}_{args.total_num}c_{args.epoch}E_lr{args.lr}.json'
+        dir_path = f'./{args.suffix}/checkpoints_{args.alg}_{args.dataset}_{args.model}_{args.total_num}c_{args.epoch}E_lr{args.lr}'
+
+        # check config
+        if os.path.exists(config_path):
+            with open(config_path, 'r') as f:
+                config = ujson.load(f)
+            if config['suffix'] == args.suffix and \
+                config['alg'] == args.alg and \
+                config['dataset'] == args.dataset and \
+                config['model'] == args.model and \
+                config['total_num'] == args.total_num and \
+                config['epoch'] == args.epoch and \
+                config['lr'] == args.lr:
+                print('Matched.')
+                print(config)
+            else:
+                exit('Config not the same, please check the config!')
+
+        # load model
+        self.server.load_model(f'{dir_path}/global.pth')
+        for idx in range(args.total_num):
+            self.clients[idx].load_model(f'{dir_path}/{idx}.pth')
+
+        return config['round']
+
+    def save_context(self):
+        config = {
+            'suffix': args.suffix,
+            'alg': args.alg,
+            'dataset': args.dataset,
+            'model': args.model,
+            'total_num': args.total_num,
+            'epoch': args.epoch,
+            'lr': args.lr,
+            'round': self.server.round
+        }
+
+        dir_path = f'./{args.suffix}/checkpoints_{args.alg}_{args.dataset}_{args.model}_{args.total_num}c_{args.epoch}E_lr{args.lr}'
+
+        # save model
+        if not os.path.exists(dir_path):
+            os.makedirs(dir_path)
+        with open(f'{dir_path}/config.json', 'w') as f:
+            ujson.dump(config, f)
+        self.server.save_model(f'{dir_path}/global.pth')
+        for idx in range(args.total_num):
+            self.clients[idx].save_model(f'{dir_path}/{idx}.pth')
 
 if __name__ == '__main__':
     args = args_parser()

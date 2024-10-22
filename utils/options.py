@@ -18,7 +18,6 @@ def args_parser():
     parser.add_argument('--total_num', type=int, help="Total clients num")
     parser.add_argument('--sr', type=float, help="Clients sample rate")
     parser.add_argument('--rnd', type=int, help="Communication rounds")
-    parser.add_argument('--test_gap', type=int, help='Rounds between two test phases')
 
     # ===== Local Training Setting =====
     parser.add_argument('--bs', type=int, help="Batch size")
@@ -34,8 +33,11 @@ def args_parser():
     # Asynchronous aggregation
     parser.add_argument('--alpha', type=float, default=0.3, help='Weight decay')
 
+    # recover
+    parser.add_argument('--recover', type=int, default=1, help='0 means not to recover, 1 means recover')
+
     # === read specific parameters from each method
-    global_args = parser.parse_known_args()
+    global_args = parser.parse_args()
     spec_alg = global_args.alg
     trainer_module = importlib.import_module(f'trainer.alg.{spec_alg}')
     spec_args = trainer_module.add_args(parser) if hasattr(trainer_module, 'add_args') else global_args
