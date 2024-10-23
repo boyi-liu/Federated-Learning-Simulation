@@ -23,7 +23,10 @@ class BaseClient:
         self.epoch = args.epoch
         self.model = load_model(args).to(args.device)
         self.loss_func = nn.CrossEntropyLoss()
-        self.optim = torch.optim.SGD(params=self.model.parameters(), lr=self.lr)
+        self.optim = torch.optim.SGD(params=self.model.parameters(),
+                                     lr=self.lr,
+                                     momentum=0.9,
+                                     weight_decay=1e-4)
 
         self.metric = {
             'acc': DataProcessor(),
@@ -96,8 +99,8 @@ class BaseClient:
     def reset_optimizer(self, decay=True):
         if not decay:
             return
-        self.optim = torch.optim.SGD(params=self.model.parameters(),
-                                     lr=(self.lr * (self.args.gamma ** self.server.round)))
+        for param_group in self.optim.param_groups:
+            param_group['lr'] = self.lr * (self.args.gamma ** self.server.round)
 
     def model2tensor(self):
         return torch.cat([param.data.view(-1) for is_p, param in zip(self.p_params, self.model.parameters())
