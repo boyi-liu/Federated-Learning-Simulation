@@ -1,12 +1,13 @@
 import importlib
-import sys
-import numpy as np
 import os
-import ujson
+import sys
 
-from utils.options import args_parser
-from utils.dataprocess import DataProcessor
+import numpy as np
+import ujson
 from tqdm import tqdm
+
+from utils.dataprocess import DataProcessor
+from utils.options import args_parser
 
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
@@ -29,7 +30,8 @@ class FedSim:
         args.output = self.output
 
         # === init clients & server ===
-        self.clients = [trainer_module.Client(idx, args) for idx in range(args.total_num)]
+        self.clients = [trainer_module.Client(idx, args) for idx in
+                        tqdm(range(args.total_num), desc='Generating Clients', leave=True)]
         self.server = trainer_module.Server(0, args, self.clients)
 
     def simulate(self):
@@ -96,12 +98,12 @@ class FedSim:
             with open(config_path, 'r') as f:
                 config = ujson.load(f)
             if config['suffix'] == args.suffix and \
-                config['alg'] == args.alg and \
-                config['dataset'] == args.dataset and \
-                config['model'] == args.model and \
-                config['total_num'] == args.total_num and \
-                config['epoch'] == args.epoch and \
-                config['lr'] == args.lr:
+                    config['alg'] == args.alg and \
+                    config['dataset'] == args.dataset and \
+                    config['model'] == args.model and \
+                    config['total_num'] == args.total_num and \
+                    config['epoch'] == args.epoch and \
+                    config['lr'] == args.lr:
                 print('Matched.')
                 print(config)
             else:
@@ -136,6 +138,7 @@ class FedSim:
         self.server.save_model(f'{dir_path}/global.pth')
         for idx in range(args.total_num):
             self.clients[idx].save_model(f'{dir_path}/{idx}.pth')
+
 
 if __name__ == '__main__':
     args = args_parser()
