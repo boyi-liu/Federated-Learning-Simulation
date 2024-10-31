@@ -52,10 +52,13 @@ class FedSim:
                 self.output.write(f'========== Round {rnd} ==========\n')
 
                 for k, v in ret_dict.items():
-                    if 'loss' in k or 'std' in k:
+                    if 'std' in k:
                         continue
-                    std_str = f'{k}_std'
-                    self.output.write(f'{k}: {v:.2f}+-{ret_dict[std_str]:.2f}\n')
+                    elif 'loss' in k:
+                        self.output.write(f'{k}: {v:.2f}\n')
+                    else:
+                        std_str = f'{k}_std'
+                        self.output.write(f'{k}: {v:.2f}+-{ret_dict[std_str]:.2f}\n')
 
                 self.output.write('server, accuracy: %.2f, ' % ret_dict['acc'])
                 self.output.write('wall clock time: %.2f seconds\n' % self.server.wall_clock_time)
