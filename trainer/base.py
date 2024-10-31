@@ -166,7 +166,7 @@ class BaseServer(BaseClient):
 
     def sample(self):
         sample_num = int(self.sample_rate * self.client_num)
-        self.sampled_clients = random.sample(self.clients, sample_num)
+        self.sampled_clients = sorted(random.sample(self.clients, sample_num), key=lambda x: x.id)
 
         total_samples = sum(len(client.dataset_train) for client in self.sampled_clients)
         for client in self.sampled_clients:
