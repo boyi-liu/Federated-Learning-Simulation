@@ -8,6 +8,7 @@ model: mlp
 total_num: 5
 sr: 0.3
 rnd: 10
+test_gap: 5
 
 # local training config
 bs: 10
