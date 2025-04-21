@@ -1,6 +1,9 @@
-from trainer.base import BaseServer, BaseClient
+from alg.base import BaseClient, BaseServer
+from utils.time_utils import time_record
+
 
 class Client(BaseClient):
+    @time_record
     def run(self):
         self.train()
 
@@ -8,9 +11,8 @@ class Client(BaseClient):
         # NOTE: no downlink here
         pass
 
-
+# extend Client to get the self.p_params
 class Server(BaseServer):
     def run(self):
-        # NOTE: no uplink, no downlink, no aggregation
         self.sample()
         self.client_update()

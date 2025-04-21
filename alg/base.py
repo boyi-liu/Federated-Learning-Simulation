@@ -2,14 +2,16 @@ import torch
 import torch.nn as nn
 import time
 import random
+import numpy as np
 
 from utils.data_utils import read_client_data
 from models.config import load_model
-from utils.dataprocess import DataProcessor
 from torch.utils.data import DataLoader
+from torchvision import transforms
 
 
-class BaseClient:
+
+class BaseClient():
     def __init__(self, id, args):
         self.id = id
         self.args = args
@@ -27,11 +29,8 @@ class BaseClient:
                                      lr=self.lr,
                                      momentum=0.9,
                                      weight_decay=1e-4)
+        self.metric = {'loss': [], 'acc': []}
 
-        self.metric = {
-            'acc': DataProcessor(),
-            'loss': DataProcessor(),
-        }
 
         if self.dataset_train is not None:
             self.loader_train = DataLoader(
@@ -39,15 +38,15 @@ class BaseClient:
                 batch_size=self.batch_size,
                 shuffle=True,
                 collate_fn=None,
-                drop_last=True
+                # drop_last=True
             )
         if self.dataset_test is not None:
             self.loader_test = DataLoader(
                 dataset=self.dataset_test,
                 batch_size=self.batch_size,
-                shuffle=True,
+                shuffle=False,
                 collate_fn=None,
-                drop_last=True
+                # drop_last=True
             )
 
         self.p_params = [False for _ in self.model.parameters()] # default: all global, no personalized
@@ -56,27 +55,38 @@ class BaseClient:
         self.weight = 1
 
     def run(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def train(self):
         # === train ===
         batch_loss = []
         for epoch in range(self.epoch):
-            for idx, (image, label) in enumerate(self.loader_train):
+            for idx, data in enumerate(self.loader_train):
+                X, y = self.preprocess(data)
+                preds = self.model(X)
+                loss = self.loss_func(preds, y)
+
                 self.optim.zero_grad()
-                image, label = image.to(self.device), label.to(self.device)
-                predict_label = self.model(image)
-                loss = self.loss_func(predict_label, label)
                 loss.backward()
                 self.optim.step()
                 batch_loss.append(loss.item())
 
         # === record loss ===
-        self.metric['loss'].append(sum(batch_loss) / len(batch_loss))
+        self.metric['loss'] = sum(batch_loss) / len(batch_loss)
 
     def clone_model(self, target):
         p_tensor = target.model2tensor()
         self.tensor2model(p_tensor)
+
+    def preprocess(self, data):
+        X, y = data
+        if type(X) == type([]):
+            X = X[0]
+        # transform = transforms.Compose([
+        #     transforms.Resize((224, 224))
+        # ])
+        # X = transform(X)
+        return X.to(self.device), y.to(self.device)
 
     def local_test(self):
         self.model.eval()
@@ -85,62 +95,40 @@ class BaseClient:
 
         with torch.no_grad():
             for data in self.loader_test:
-                images, labels = data
-                images = images.to(self.device)
-                labels = labels.to(self.device)
-                outputs = self.model(images)
-                _, predicted = torch.max(outputs.data, 1)
-                total += labels.size(0)
-                correct += (predicted == labels).sum().item()
-        acc = 100.00 * correct / total
+                X, y = self.preprocess(data)
+                preds = self.model(X)
 
-        self.metric['acc'].append(acc)
+                _, preds_y = torch.max(preds.data, 1)
+                total += y.size(0)
+                correct += (preds_y == y).sum().item()
+        self.metric['acc'] = 100.00 * correct / total
+
 
     def reset_optimizer(self, decay=True):
         if not decay:
             return
         for param_group in self.optim.param_groups:
-            param_group['lr'] = self.lr * (self.args.gamma ** self.server.round)
+            param_group['lr'] =  self.lr * (self.args.gamma ** self.server.round)
 
-    def model2tensor(self):
-        return torch.cat([param.data.view(-1) for is_p, param in zip(self.p_params, self.model.parameters())
-                          if is_p is False], dim=0)
+    def model2tensor(self, params=None):
+        selected_params = params if params is not None else [not is_p for is_p in self.p_params]
+        return torch.cat([param.detach().view(-1)
+                          for selected, param in zip(selected_params, self.model.parameters())
+                          if selected is True], dim=0)
 
-    def tensor2model(self, tensor):
+    def tensor2model(self, tensor, params=None):
+        selected_params = params if params is not None else [not is_p for is_p in self.p_params]
         param_index = 0
-        for is_p, param in zip(self.p_params, self.model.parameters()):
-            if not is_p:
-                # === get shape & total size ===
-                shape = param.shape
-                param_size = 1
-                for s in shape:
-                    param_size *= s
+        for selected, param in zip(selected_params, self.model.parameters()):
+            if selected:
+                with torch.no_grad():
+                    param_size = param.numel()
+                    param.copy_(tensor[param_index: param_index + param_size].view(param.shape).detach())
+                    param_index += param_size
 
-                # === put value into param ===
-                # .clone() is a deep copy here
-                param.data = tensor[param_index: param_index + param_size].view(shape).detach().clone()
-                param_index += param_size
-
-    def save_model(self, path):
-        # === only save p_params ===
-        save_dict = {}
-        model_dict = self.model.state_dict()
-        for is_p, param_name in zip(self.p_params, model_dict.keys()):
-            if is_p:
-                save_dict[param_name] = self.model.state_dict()[param_name]
-        torch.save(save_dict, path)
-
-    def load_model(self, path):
-        # === load global params in server ===
-        params_dict = self.server.model.state_dict()
-        # === load p_params ===
-        save_dict = torch.load(path, weights_only=True)
-
-        for param_name in save_dict.keys():
-            params_dict[param_name] = save_dict[param_name]
-        self.model.load_state_dict(params_dict)
-
-
+    def sim_time(self):
+        num_batches = len(self.loader_train)
+        self.training_time = num_batches * random.uniform(0.8, 1.2) * self.lag_level
 
 class BaseServer(BaseClient):
     def __init__(self, id, args, clients):
@@ -159,10 +147,8 @@ class BaseServer(BaseClient):
         for client in self.clients:
             client.server = self
 
-        self.TO_LOG = True
-
     def run(self):
-        raise NotImplementedError()
+        raise NotImplementedError
 
     def sample(self):
         sample_num = int(self.sample_rate * self.client_num)
@@ -185,48 +171,29 @@ class BaseServer(BaseClient):
             client.run()
             end_time = time.time()
             client.training_time = (end_time - start_time) * client.lag_level
+            client.sim_time()
         self.wall_clock_time += max([client.training_time for client in self.sampled_clients])
 
     def uplink(self):
         assert (len(self.sampled_clients) > 0)
-        self.received_params = []
-        for client in self.sampled_clients:
-            client_tensor = client.model2tensor()
-            client_tensor = torch.where(torch.isnan(client_tensor),
-                                        torch.zeros_like(client_tensor),
-                                        client_tensor)
-            self.received_params.append(client_tensor * client.weight)
-
+        def nan_to_zero(tensor):
+            return torch.where(torch.isnan(tensor), torch.zeros_like(tensor), tensor)
+        self.received_params = [nan_to_zero(client.model2tensor()) for client in self.sampled_clients]
 
     def aggregate(self):
         assert (len(self.sampled_clients) > 0)
+        self.received_params = [params * client.weight for client, params in zip(self.sampled_clients, self.received_params)]
         avg_tensor = sum(self.received_params)
         self.tensor2model(avg_tensor)
 
     def test_all(self):
+        self.metric['acc'] = []
         for client in self.clients:
             client.clone_model(self)
             client.local_test()
+            self.metric['acc'].append(client.metric['acc'])
 
-            c_metric = client.metric
-            for m_key, m in self.metric.items():
-                if m_key == 'loss' and client not in self.sampled_clients:
-                    continue
-                m.append(c_metric[m_key].last())
-
-        return self.analyse_metric()
-
-    def analyse_metric(self):
-        ret_dict = {}
-        for m_key, m in self.metric.items():
-            ret_dict[m_key] = m.avg()
-            ret_dict[f'{m_key}_std'] = m.std()
-            m.clear()
-
-        return ret_dict
-
-    def save_model(self, path):
-        torch.save(self.model.state_dict(), path)
-
-    def load_model(self, path):
-        self.model.load_state_dict(torch.load(path, weights_only=True))
+        return {
+            'acc': np.mean(self.metric['acc']),
+            'acc_std': np.std(self.metric['acc']),
+        }

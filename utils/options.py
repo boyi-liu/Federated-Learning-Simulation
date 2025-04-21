@@ -1,6 +1,5 @@
 import argparse
 import importlib
-
 import yaml
 
 
@@ -18,6 +17,7 @@ def args_parser():
     parser.add_argument('--total_num', type=int, help="Total clients num")
     parser.add_argument('--sr', type=float, help="Clients sample rate")
     parser.add_argument('--rnd', type=int, help="Communication rounds")
+    parser.add_argument('--test_gap', type=int, help='Rounds between two test phases')
 
     # ===== Local Training Setting =====
     parser.add_argument('--bs', type=int, help="Batch size")
@@ -25,21 +25,20 @@ def args_parser():
     parser.add_argument('--lr', type=float, help="Learning rate")
     parser.add_argument('--gamma', type=float, help="Exponential decay of learning rate")
 
+    # ===== Async Setting =====
+    parser.add_argument('--decay', type=float, default=0.3, help="Basic weight decay in asynchronous aggregation")
+
     # ===== System Heterogeneity Setting =====
-    parser.add_argument('--lag_level', type=int, default=3, help="Lag level used to simulate latency of device")
-    parser.add_argument('--lag_rate', type=float, default=0.3, help="Proportion of stale device")
+    parser.add_argument('--delay', type=int, default=3, help="Delay level used to simulate latency of device")
+    parser.add_argument('--delay_rate', type=float, default=0.3, help="Proportion of stale device")
 
-    # ===== Other Setting =====
-    # Asynchronous aggregation
-    parser.add_argument('--alpha', type=float, default=0.3, help='Weight decay')
-
-    # recover
-    parser.add_argument('--recover', type=int, default=1, help='0 means not to recover, 1 means recover')
+    # ===== Wandb Setting =====
+    parser.add_argument( '--wandb_project', type=str, default='Default', help="Project name for Wandb")
 
     # === read specific parameters from each method
-    global_args = parser.parse_args()
+    global_args, _ = parser.parse_known_args()
     spec_alg = global_args.alg
-    trainer_module = importlib.import_module(f'trainer.alg.{spec_alg}')
+    trainer_module = importlib.import_module(f'alg.{spec_alg}')
     spec_args = trainer_module.add_args(parser) if hasattr(trainer_module, 'add_args') else global_args
 
     # === read params from yaml ===

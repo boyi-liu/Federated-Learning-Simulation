@@ -1,14 +1,15 @@
-# A Simple Async FL Simulation Framework
+# A Simple FL Simulation Framework
 
 A *simple and easy-to-extend* 
-asynchronous federated learning (AFL) simulation framework.
+federated learning (FL) simulation framework.
+
+We support both synchronous and asynchronous federated learning simulation.
 
 The asynchronous simulation is based on a prior queue.
 + Insert training-finished clients into the prior queue based on supposed finished time
 + Pop the first item in the prior queue
 + Update the simulated wall-clock time based on the item
 
-We also provide simulation of synchronous federated learning like FedAvg.
 
 
 ## Getting Started
@@ -23,6 +24,9 @@ git clone https://github.com/boyi-liu/Asynchronous-Federated-Learning-Simulation
 cd dataset
 python generate_cifar10.py noniid balance dir
 ```
+Some important hyperparameters in partitioning datasets:
+`alpha` in `dataset_utils.py` is a measurement for the non-iidness of the dataset.
+ `num_clients` in `generate_mnist.py` is the number of clients, i.e. how many shards you slice the datasets into.
 + Config hyperparameters
 
 There are two places to config, one in `/script/config.yaml`, another in `utils/options.py`.

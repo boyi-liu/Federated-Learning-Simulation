@@ -1,32 +1,20 @@
 import importlib
 
-dataset_params = {
-    'mnist': 10,
-    'cifar10': 10
-}
+dataset2class = {'mnist': 10, 'cifar10': 10}
 
-model_params = {
-    'mnist': {
-        'mlp': {'dim_in': 784,
-                'hidden_layer': 256},
-        'cnnmnist': {}
-    },
-    'cifar10': {
-        'cnncifar': {}
-    },
-}
+def name_filter(dataset_arg):
+    if 'cifar10' in dataset_arg:
+        return 'cifar10'
+    elif 'mnist' in dataset_arg:
+        return 'mnist'
+    return 'Unknown dataset'
 
 def load_model(args):
-    model_arg = args.model
-    dataset_arg = args.dataset
-    args.class_num = dataset_params[dataset_arg]
-
-    if dataset_arg not in model_params.keys():
+    dataset_arg = name_filter(args.dataset)
+    args.class_num = dataset2class[dataset_arg]
+    if args.class_num == -1:
         exit('Dataset params not exist (in config.py)!')
 
-    params = None
-    if model_arg in model_params[dataset_arg].keys():
-        params = {**model_params[dataset_arg][model_arg]}
-
+    model_arg = args.model
     model_module = importlib.import_module(f'models.{model_arg}')
-    return getattr(model_module, model_arg)(args, params)
+    return getattr(model_module, f'{model_arg}_{dataset_arg}')(args)
