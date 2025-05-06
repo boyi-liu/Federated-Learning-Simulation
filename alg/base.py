@@ -126,10 +126,6 @@ class BaseClient():
                     param.copy_(tensor[param_index: param_index + param_size].view(param.shape).detach())
                     param_index += param_size
 
-    def sim_time(self):
-        num_batches = len(self.loader_train)
-        self.training_time = num_batches * random.uniform(0.8, 1.2) * self.lag_level
-
 class BaseServer(BaseClient):
     def __init__(self, id, args, clients):
         super().__init__(id, args)
@@ -167,11 +163,7 @@ class BaseServer(BaseClient):
         for client in self.sampled_clients:
             client.model.train()
             client.reset_optimizer()
-            start_time = time.time()
             client.run()
-            end_time = time.time()
-            client.training_time = (end_time - start_time) * client.lag_level
-            client.sim_time()
         self.wall_clock_time += max([client.training_time for client in self.sampled_clients])
 
     def uplink(self):
