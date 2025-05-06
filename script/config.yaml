@@ -1,8 +1,8 @@
 # basic config
 suffix: Default
 device: 0
-dataset: mnist
-model: mlp
+dataset: cifar10
+model: cnn
 
 # federated config
 total_num: 5

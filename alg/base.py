@@ -51,7 +51,7 @@ class BaseClient():
 
         self.p_params = [False for _ in self.model.parameters()] # default: all global, no personalized
         self.training_time = None
-        self.lag_level = args.lag_level
+        self.delay = args.delay
         self.weight = 1
 
     def run(self):
@@ -182,8 +182,7 @@ class BaseServer(BaseClient):
 
     def aggregate(self):
         assert (len(self.sampled_clients) > 0)
-        self.received_params = [params * client.weight for client, params in zip(self.sampled_clients, self.received_params)]
-        avg_tensor = sum(self.received_params)
+        avg_tensor = sum([params * client.weight for client, params in zip(self.sampled_clients, self.received_params)])
         self.tensor2model(avg_tensor)
 
     def test_all(self):

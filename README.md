@@ -30,7 +30,7 @@ Some important hyperparameters in partitioning datasets:
 + Config hyperparameters
 
 There are two places to config, one in `/script/config.yaml`, another in `utils/options.py`.
-The priority follows: `args>yaml`.
+The priority follows: `args` first `yaml` second.
 If you config hyperparameters in `utils/options.py`, it will overwrite that in `args`.
 
 + Run evaluation
@@ -48,24 +48,24 @@ If you are working on a **synchronous** FL algorithm, just extend the Client and
 from trainer.base import BaseServer, BaseClient
 
 class Client(BaseClient):
-    def __init__(self, id, args, dataset):
-        super().__init__(id, args, dataset)
+    def __init__(self, id, args):
+        super().__init__(id, args)
 
 class Server(BaseServer):
-    def __init__(self, id, args, dataset, clients):
-        super().__init__(id, args, dataset, clients)
+    def __init__(self, id, args, clients):
+        super().__init__(id, args, clients)
 ```
 Otherwise, you may extend the Client and Server in `trainer.asyncbase`
 ```
 from trainer.asyncbase import AsyncBaseServer, AsyncBaseClient
 
 class Client(AsyncBaseClient):
-    def __init__(self, id, args, dataset):
-        super().__init__(id, args, dataset)
+    def __init__(self, id, args):
+        super().__init__(id, args)
 
 class Server(AsyncBaseServer):
-    def __init__(self, id, args, dataset, clients):
-        super().__init__(id, args, dataset, clients)
+    def __init__(self, id, args, clients):
+        super().__init__(id, args, clients)
 ```
 
 ### Config your hyperparameters
